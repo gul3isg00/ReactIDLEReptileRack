@@ -26,6 +26,9 @@ const App = () => {
   const [enclosures, setEnclosures] = useState([]);
 
   // SNAKES
+  // THESE ARE JUST TEMPLATES, IN FUTURE I WANT REPTILES BASED OFF
+  // THESE TEMPLATES TO BE RANDOMLY GENERATED, THEN ALL DATA ABOUT
+  // SPECIFIC REPTILES TO BE STORED IN THE ENCLOSURES.
   const [snakes, setSnakes] = useState([{
       species: "Corn snake", 
       name: "Corn snake",
@@ -153,6 +156,7 @@ const App = () => {
 
   // EXTRA APP FUNCTIONS
 
+  // Used to find and return the id of an enclosure at a specific coordinate
   const findEnclosureAtCoords = (curX, curY) => {
     for(var x=0; x!= enclosures.length; x++){
       for(var y=0; y!= enclosures[x].cubes.length; y++){
@@ -162,6 +166,13 @@ const App = () => {
     return -1;
   };
 
+  // Checks surrounding areas for enclosure, if there is one
+  // it joins this enclosure to that, else it creates a new one
+
+  // In future the user needs to be able to specify whether 
+  // they want to create a new enclosure or increase the size
+  // of an old one, so that they are able to use all the space
+  // in the rack without running creating one big enclosure.
   const checkForEnclosure = (curX, curY) => {
     var newEnc = [...enclosures];
     var existingEnc = false;
@@ -177,8 +188,9 @@ const App = () => {
       for(var y=0; y!= enclosures[x].cubes.length; y++){
         for(var z = 0; z!= diffCoords.length; z++){
           if(enclosures[x].cubes[y][0] == diffCoords[z][0] && enclosures[x].cubes[y][1] == diffCoords[z][1]){
-            console.log("Cube: " + curX + ":"+curY +" added to enclosure "+ x);
             newEnc[x].cubes.push([curX,curY]);
+            newEnc[x].size ++;;
+            console.log("Cube: " + curX + ":"+curY +" added to enclosure "+ x, ". Size is now " + newEnc[x].size);
             existingEnc = true;
           }
         }
@@ -189,7 +201,8 @@ const App = () => {
       newEnc.push({
         id: enclosures.length,
         cubes: [[curX,curY]],
-        reptile: "None"
+        reptile: "NaN",
+        size: 1
       })
       console.log("No enclosure here, creating one at "+curX+":"+curY);
     }
@@ -199,18 +212,26 @@ const App = () => {
 
   // Function to deal with when the the draggable components are dropped 
   const droppedFromShop = (element, text) => {
-    if(element.id[0] != null && element.innerHTML != "100"){
+    if(element.id[0] != null ){
       var coords = [element.id[0],element.id[1]];
-      if(text.price <= cash){
-        var nGrid = {...grid};
-        var nCash = cash;
-        nCash -= text.price;
-        nGrid.prices[coords[1]][coords[0]] = text.species;
-        nGrid.reptiles[coords[1]][coords[0]] = text;
-        setCash(nCash);
-        setGrid(nGrid);
+      var enclosureID = findEnclosureAtCoords(coords[1],coords[0]);
+      console.log("Dropped on enclosure "+ enclosureID);
+      if(text.price <= cash && enclosureID > -1){
+        console.log(enclosures[enclosureID]);
+        if(enclosures[enclosureID].reptile == "NaN"){
+          console.log(text.species + " was rehomed into enclosure " + enclosureID);
+          var nGrid = {...grid};
+          var nEnclosures = [...enclosures];
+          var nCash = cash;
+          nCash -= text.price;
+          nGrid.prices[coords[1]][coords[0]] = text.species;
+          nGrid.reptiles[coords[1]][coords[0]] = text;
+          nEnclosures[enclosureID].reptile = text;
+          setCash(nCash);
+          setGrid(nGrid);
+          setEnclosures(nEnclosures);
+        }
       }
-
     }
   };
 
