@@ -104,6 +104,8 @@ const App = () => {
         
         // Change cube text
         newColor.prices[newPos[0]][newPos[1]] = " ";
+      
+        checkForEnclosure(newPos[0],newPos[1]);
 
         setCash(newC);
       }
@@ -142,6 +144,7 @@ const App = () => {
       newPos[2] = newColor.colors[newPos[0]][newPos[1]];
       newColor.colors[newPos[0]][newPos[1]] = playerColor;
     }
+    console.log("Enclosure at this coords: " +findEnclosureAtCoords(newPos[0],newPos[1]));
 
     setGrid(newColor);
     setPosition(newPos);
@@ -150,9 +153,48 @@ const App = () => {
 
   // EXTRA APP FUNCTIONS
 
-  const checkSurroundingCubes = (curX, curY) => {
-    // USE THIS TO BUILD / RECOGNISE ENCLOSURES
-    // ONLY ONE REPTILE PER ENCLOSURE (FOR NOW)
+  const findEnclosureAtCoords = (curX, curY) => {
+    for(var x=0; x!= enclosures.length; x++){
+      for(var y=0; y!= enclosures[x].cubes.length; y++){
+        if(enclosures[x].cubes[y][0] == curX && enclosures[x].cubes[y][1] == curY) return x;
+      }
+    }
+    return -1;
+  };
+
+  const checkForEnclosure = (curX, curY) => {
+    var newEnc = [...enclosures];
+    var existingEnc = false;
+
+    var diffCoords = [
+      [curX - 1, curY],
+      [curX + 1, curY],
+      [curX, curY - 1],
+      [curX, curY + 1],
+    ];
+
+    for(var x=0; x!= enclosures.length; x++){
+      for(var y=0; y!= enclosures[x].cubes.length; y++){
+        for(var z = 0; z!= diffCoords.length; z++){
+          if(enclosures[x].cubes[y][0] == diffCoords[z][0] && enclosures[x].cubes[y][1] == diffCoords[z][1]){
+            console.log("Cube: " + curX + ":"+curY +" added to enclosure "+ x);
+            newEnc[x].cubes.push([curX,curY]);
+            existingEnc = true;
+          }
+        }
+      }
+    }
+
+    if (!existingEnc){
+      newEnc.push({
+        id: enclosures.length,
+        cubes: [[curX,curY]],
+        reptile: "None"
+      })
+      console.log("No enclosure here, creating one at "+curX+":"+curY);
+    }
+
+    setEnclosures(newEnc);
   };
 
   // Function to deal with when the the draggable components are dropped 
