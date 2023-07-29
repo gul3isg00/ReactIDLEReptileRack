@@ -2,14 +2,67 @@ import { useState } from "react";
 
 const App = () => {
 
-  const colors = ["darkolivegreen", "cornflowerblue", "burlywood", "black"];
+  const colors = ["darkolivegreen", "cornflowerblue", "burlywood"];
   const defaultColor = "black";
   const playerColor = "lightgray";
+
+  const reptileTemplate = {
+    species: "NaN", 
+    name: "NaN", 
+    prefEnviroments: ["NaN"], 
+    diet: ["NaN"],
+    lifeSpan: [-1,-1],
+    sex: "NaN",
+    spaceReqs: -1,
+    venomous: "NaN",
+    morphs: ["NaN"],
+    price: -1
+  };
 
   // States -------------------------------------
   const [cash, setCash] = useState(1000);
   const [placeColor, setPlaceColor] = useState(0);
   const [position, setPosition] = useState([1,1,defaultColor]);
+  const [enclosures, setEnclosures] = useState([]);
+
+  // SNAKES
+  const [snakes, setSnakes] = useState([{
+      species: "Corn snake", 
+      name: "Corn snake",
+      prefEnviroments: ["burlywood"], 
+      diet: ["Rodents"],
+      lifeSpan: [12, 20],
+      sex: "F",
+      spaceReqs: 3,
+      venomous: "N",
+      morphs: ["Basic"],
+      price: 30
+    },{
+      species: "Hognose snake", 
+      name: "Hognose snake",
+      prefEnviroments: ["burlywood"], 
+      diet: ["Rodents", "Frogs"],
+      lifeSpan: [9, 19],
+      sex: "F",
+      spaceReqs: 2,
+      venomous: "RF",
+      morphs: ["Basic"],
+      price: 30
+    },{
+      species: "Ball python", 
+      name: "Ball python",
+      prefEnviroments: ["darkolivegreen"], 
+      diet: ["Rodents"],
+      lifeSpan: [15, 30],
+      sex: "F",
+      spaceReqs: 2,
+      venomous: "No",
+      morphs: ["Basic"],
+      price: 30
+    },
+  ]);
+  // END OF SNAKES
+ 
   const [grid, setGrid] = useState({
     colors: [
     [defaultColor,defaultColor,defaultColor, defaultColor, defaultColor],
@@ -24,6 +77,13 @@ const App = () => {
       [100, 100, 100, 100, 100],
       [100, 100, 100, 100, 100],
       [100, 100, 100, 100, 100],
+    ],
+    reptiles :[
+      [reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate],
+      [reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate],
+      [reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate],
+      [reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate],
+      [reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate],
     ]
 });
 // ALL BUTTON PRESS EVENTS --------------------------------------
@@ -33,11 +93,18 @@ const App = () => {
 
     // Placing block
     if(e.key == "Enter" || e.key == " "){
-      if(grid.prices[position[0]][position[1]] != " " &&  grid.prices[newPos[0]][newPos[1]] <= cash){
+      if(grid.reptiles[newPos[0]][newPos[1]].species == "NaN" && newPos[2] == defaultColor && grid.prices[newPos[0]][newPos[1]] <= cash){
+        
+        // Set cube to new color
         newPos[2] = colors[placeColor];
+
+        // Update cash
         var newC = cash;
         newC -= newColor.prices[newPos[0]][newPos[1]];
+        
+        // Change cube text
         newColor.prices[newPos[0]][newPos[1]] = " ";
+
         setCash(newC);
       }
     }
@@ -82,14 +149,26 @@ const App = () => {
   // END OF BUTTON PRESS EVENTS ------------------------
 
   // EXTRA APP FUNCTIONS
+
+  const checkSurroundingCubes = (curX, curY) => {
+    // USE THIS TO BUILD / RECOGNISE ENCLOSURES
+    // ONLY ONE REPTILE PER ENCLOSURE (FOR NOW)
+  };
+
   // Function to deal with when the the draggable components are dropped 
   const droppedFromShop = (element, text) => {
     if(element.id[0] != null && element.innerHTML != "100"){
       var coords = [element.id[0],element.id[1]];
-      console.log(coords);
-      var nGrid = {...grid};
-      nGrid.prices[coords[1]][coords[0]] = text;
-      setGrid(nGrid);
+      if(text.price <= cash){
+        var nGrid = {...grid};
+        var nCash = cash;
+        nCash -= text.price;
+        nGrid.prices[coords[1]][coords[0]] = text.species;
+        nGrid.reptiles[coords[1]][coords[0]] = text;
+        setCash(nCash);
+        setGrid(nGrid);
+      }
+
     }
   };
 
@@ -98,6 +177,7 @@ const App = () => {
     var newGrid = {...grid};
     newGrid.colors = expand(newGrid.colors, defaultColor);
     newGrid.prices = expand(newGrid.prices, 100);
+    newGrid.reptiles = expand(newGrid.reptiles, reptileTemplate);
     setGrid(newGrid);
   }
 
@@ -120,9 +200,7 @@ const App = () => {
         </div>
         <div style = {{display: "inline-block", verticalAlign: "middle"}}>
           <h1>Shop</h1>
-          <Draggable text = {"Snake"} outcomeFunction = {droppedFromShop} ></Draggable>
-          <Draggable text = {"Lizard"} outcomeFunction = {droppedFromShop} ></Draggable>
-          <Draggable text = {"Frog"} outcomeFunction = {droppedFromShop} ></Draggable>
+          <Shop snakeList={snakes} outcomeFunction={droppedFromShop}/>
         <div/>
       </div>
       <div>
@@ -146,11 +224,11 @@ const Grid = ({gridColor, gridText}) => {
   var grid = [];
 
   for(var x = 0; x != gridColor.length; x++){
-    grid.push(<Row rowID = {x.toString()} key = {x} rowColor = {gridColor[x]} rowText = {gridText[x]}/>);
+    grid.push(<Row rowID = {x.toString()} key = {x}  rowColor = {gridColor[x]} rowText = {gridText[x]}/>);
   }
 
   return (
-    <table>
+    <table style={{borderCollapse: "collapse"}}>
       <tbody>
         {grid}
       </tbody>
@@ -173,17 +251,19 @@ const Row = ({rowColor, rowText, rowID}) => {
 }
 
 // Cube component
-const Cube = ({size, color, text, table, id}) => {
+const Cube = ({size, color, text, table, id, }) => {
   var txtColor = "black";
+  var cBorderColor = color;
   if(color == "black" || color == "blue") txtColor = "white";
+  if(color == "black") cBorderColor = "white";
 
   const style = {
     color: txtColor, 
     textAlign: "center",
     backgroundColor: color, 
+    border: "2px solid " + cBorderColor,
     height: size, 
-    width: size,
-    border: color
+    width: size
   }
 
   if(table){
@@ -194,6 +274,28 @@ const Cube = ({size, color, text, table, id}) => {
   return(
     <div id = {id} style = {style} >{text}</div>
   );
+}
+
+// Component used to generate and interact with the shop
+const Shop = ({snakeList, outcomeFunction}) => {
+  var shopItems = [];
+  for (var x=0;x != snakeList.length; x++) shopItems.push(<ReptileDraggable key = {x} reptile={snakeList[x]} outcomeFunction={outcomeFunction}/>)
+  return (
+    <div>    
+      {shopItems}
+    </div>
+  );
+}
+
+
+// Component used to interact with purchasing reptiles
+
+const ReptileDraggable = ({outcomeFunction, reptile}) => {
+  if(reptile != null){
+    return (
+      <Draggable outcomeFunction={outcomeFunction} text = {reptile}/>
+    );
+  }
 }
 
 // Draggable component for shop items
@@ -212,12 +314,12 @@ const Draggable = ({outcomeFunction, text}) => {
             width: 100,
             height: 100,
             color: "white",
-            backgroundColor: "black"
+            backgroundColor: "darkgrey"
           }
         }
 
       >
-        {text}
+        {text.species + ", Price: " + text.price}
     </div>
   );
 }
