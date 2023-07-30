@@ -8,15 +8,6 @@ const App = () => {
 
   const reptileTemplate = {
     species: "NaN", 
-    name: "NaN", 
-    prefEnviroments: ["NaN"], 
-    diet: ["NaN"],
-    lifeSpan: [-1,-1],
-    sex: "NaN",
-    spaceReqs: -1,
-    venomous: "NaN",
-    morphs: ["NaN"],
-    price: -1
   };
 
   const reptiles = { 
@@ -25,6 +16,7 @@ const App = () => {
       name: "Corn snake",
       prefEnviroments: ["burlywood"], 
       diet: ["Rodents"],
+      mature: 2,
       lifeSpan: [12, 20],
       sex: ["M","F"],
       spaceReqs: 3,
@@ -62,7 +54,43 @@ const App = () => {
           price: 60
         }
       ]
-    }
+    },{
+    species: "Hognose snake", 
+    name: "Hognose snake",
+    prefEnviroments: ["burlywood"], 
+    diet: ["Rodents", "Frogs"],
+    mature: 2,
+    lifeSpan: [10, 20],
+    sex: ["M","F"],
+    spaceReqs: 2,
+    venomous: "RF",
+    morphs: [
+      {
+        name: "Normal",
+        weight: 0,
+        chromosome: "WT",
+        price: 30
+      },
+      {
+        name: "Albino",
+        weight: 0,
+        chromosome: "SR",
+        price: 45
+      },
+      {
+        name: "Conda",
+        weight: 0,
+        chromosome: "SD",
+        price: 100
+      },
+      {
+        name: "Superarctic",
+        weight: 0,
+        chromosome: "SD",
+        price: 150
+      }
+    ]
+  }
   ]
 };
 
@@ -175,11 +203,12 @@ const App = () => {
     // THIS IS CURRENTLY JUST FOR SNAKES, NEEDS TO BE CHANGED IN FUTURE
     // TOO ACCOMODATE FOR OTHER REPTILES
     for(var x = 0; x!= stockNum; x++){
-      var curReptile = {...reptiles.snakes[randInRange(0,reptiles.snakes.length-1)]};
+      var curReptile = {...reptiles.snakes[randInRange(0,reptiles.snakes.length)]};
       const newLifeSpan = randInRange(curReptile.lifeSpan[0],curReptile.lifeSpan[1]);
       curReptile.lifeSpan = newLifeSpan;
       curReptile.sex = randInRange(1,3) == 1 ? "M" : "F";
-
+      const newAge = randInRange(0,3);
+      curReptile.age = newAge;
       var curMorphs = [], numOfMorphs = 0, wT = false;
       for(var y=0; y!= curReptile.morphs.length;y++){
         if(randInRange(0,100) >= 60){
@@ -417,9 +446,17 @@ const Draggable = ({outcomeFunction, text}) => {
   }
 
   var totalPrice = 0;
-    for(var x = 0; x!= text.morphs.length;x++) totalPrice += text.morphs[x].price;
+  for(var x = 0; x!= text.morphs.length;x++) totalPrice += text.morphs[x].price;
+  
+  var finalText = [text.name, <br key = {0}/>,"Age: ",text.age,<br key = {4}/>,"Price: £",totalPrice,<br key = {1}/>];
 
-  const finalText = [text.name, <br key = {0}/>,"Price: £",totalPrice];
+  var sex = "Unknown";
+  if(text.age >= text.mature) sex = text.sex;
+  finalText.push("Sex: ",sex,<br key = {79}/>);
+
+  for(var x =0 ;x!=text.morphs.length;x++){finalText.push(text.morphs[x].name); finalText.push(<br key = {"y"+x}/>);}
+
+
 
   return (
     <div
@@ -428,7 +465,8 @@ const Draggable = ({outcomeFunction, text}) => {
         style = {
           {
             width: 100,
-            height: 100,
+            height: 110,
+            border: "2px solid black",
             color: "white",
             backgroundColor: "darkgrey"
           }
