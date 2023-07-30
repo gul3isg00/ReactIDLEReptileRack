@@ -421,7 +421,9 @@ const Shop = ({stock, outcomeFunction}) => {
   var shopDisplay = [];
   for(var x = 0; x!=stock.length;x++) shopDisplay.push(<ReptileDraggable key = {x} outcomeFunction={outcomeFunction} reptile={stock[x]}/>);
   return (
-    <div>    
+    <div style = {{
+      margin: "20px"
+    }}>    
       {shopDisplay}
     </div>
   );
