@@ -184,7 +184,7 @@ const App = () => {
   const randInRange = (min, max) => Math.floor(Math.random() * (max - min) + min);
 
   const generateShopItems = () => {
-    var shopItems = [];
+    var shopItems = [...shopItemsState];
     const numOfItems = 5;
     for(var x = 0; x!= numOfItems; x++){
       var curReptile = {...reptiles.snakes[randInRange(0,reptiles.snakes.length-1)]};
@@ -207,12 +207,11 @@ const App = () => {
       if(numOfMorphs <= 0) curMorphs.push(curReptile.morphs[0]);
   
       curReptile.morphs = curMorphs;
-      console.log(curReptile);
-      console.log("key ", x);
-      shopItems.push(<ReptileDraggable key = {x} outcomeFunction={droppedFromShop} reptile={curReptile}/>)
+      shopItems.push(curReptile);
     }
-    setShopLoad(true);
+    
     setShopItems(shopItems);
+    setShopLoad(true);
   }
   // Checks surrounding areas for enclosure, if there is one
   // it joins this enclosure to that, else it creates a new one
@@ -263,7 +262,7 @@ const App = () => {
   };
 
   // Function to deal with when the the draggable components are dropped 
-  const droppedFromShop = (element, text) => {
+  var droppedFromShop = (element, text) => {
     console.log([...enclosures]);
     console.log(element.id);
     if(element.id[0] != null ){
@@ -326,7 +325,7 @@ const App = () => {
         </div>
         <div style = {{display: "inline-block", verticalAlign: "middle"}}>
           <h1>Shop</h1>
-          <Shop shopItems = {shopItemsState} />
+          <Shop shopItems = {shopItemsState} outcomeFunction ={droppedFromShop} />
         <div/>
       </div>
       <div>
@@ -403,7 +402,9 @@ const Cube = ({size, color, text, table, id, }) => {
 }
 
 // Component used to generate and interact with the shop
-const Shop = ({shopItems}) => {
+const Shop = ({shopItems, outcomeFunction}) => {
+  var finalOutomce = [];
+    for(var x=0;x!=shopItems.length;x++) finalOutomce.push(<ReptileDraggable key = {x} outcomeFunction={outcomeFunction} reptile={shopItems[x]}/>);
     return (
       <div>    
         {shopItems}
