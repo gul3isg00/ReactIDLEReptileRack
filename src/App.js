@@ -19,53 +19,64 @@ const App = () => {
     price: -1
   };
 
+  const reptiles = { 
+    snakes: [{
+      species: "Corn snake", 
+      name: "Corn snake",
+      prefEnviroments: ["burlywood"], 
+      diet: ["Rodents"],
+      lifeSpan: [12, 20],
+      sex: ["M","F"],
+      spaceReqs: 3,
+      venomous: "N",
+      morphs: [
+        {
+          name: "Normal",
+          weight: 0,
+          chromosome: "WT",
+          price: 30
+        },
+        {
+          name: "Okeetee",
+          weight: 0,
+          chromosome: "WT",
+          price: 35
+        },
+        {
+          name: "Caramel",
+          weight: 0,
+          chromosome: "SD",
+          price: 40
+        },
+        {
+          name: "Amelanistic",
+          weight: 0,
+          storeWeight: 50,
+          chromosome: "SR",
+          price: 45
+        },
+        {
+          name: "Motley",
+          weight: 0,
+          chromosome: "SR",
+          price: 60
+        }
+      ]
+    }
+  ]
+};
+
   // States -------------------------------------
   const [cash, setCash] = useState(1000);
   const [placeColor, setPlaceColor] = useState(0);
   const [position, setPosition] = useState([1,1,defaultColor]);
   const [enclosures, setEnclosures] = useState([]);
 
-  // SNAKES
-  // THESE ARE JUST TEMPLATES, IN FUTURE I WANT REPTILES BASED OFF
-  // THESE TEMPLATES TO BE RANDOMLY GENERATED, THEN ALL DATA ABOUT
-  // SPECIFIC REPTILES TO BE STORED IN THE ENCLOSURES.
-  const [snakes, setSnakes] = useState([{
-      species: "Corn snake", 
-      name: "Corn snake",
-      prefEnviroments: ["burlywood"], 
-      diet: ["Rodents"],
-      lifeSpan: [12, 20],
-      sex: "F",
-      spaceReqs: 3,
-      venomous: "N",
-      morphs: ["Basic"],
-      price: 30
-    },{
-      species: "Hognose snake", 
-      name: "Hognose snake",
-      prefEnviroments: ["burlywood"], 
-      diet: ["Rodents", "Frogs"],
-      lifeSpan: [9, 19],
-      sex: "F",
-      spaceReqs: 2,
-      venomous: "RF",
-      morphs: ["Basic"],
-      price: 30
-    },{
-      species: "Ball python", 
-      name: "Ball python",
-      prefEnviroments: ["darkolivegreen"], 
-      diet: ["Rodents"],
-      lifeSpan: [15, 30],
-      sex: "F",
-      spaceReqs: 2,
-      venomous: "No",
-      morphs: ["Basic"],
-      price: 30
-    },
-  ]);
-  // END OF SNAKES
- 
+  // All stock hooks
+  const [shopStock, setStock] = useState([]);
+  const [stockGenerated, setGenerated] = useState(false);
+  const [stockNum, setStockNum] = useState(5);
+
   const [grid, setGrid] = useState({
     colors: [
     [defaultColor,defaultColor,defaultColor, defaultColor, defaultColor],
@@ -93,7 +104,6 @@ const App = () => {
   const onKeyPressed = (e) => {
     var newPos = [...position];
     var newColor = {...grid};
-
     // Placing block
     if(e.key == "Enter" || e.key == " "){
       if(grid.reptiles[newPos[0]][newPos[1]].species == "NaN" && newPos[2] == defaultColor && grid.prices[newPos[0]][newPos[1]] <= cash){
@@ -156,6 +166,40 @@ const App = () => {
 
   // EXTRA APP FUNCTIONS
 
+  const randInRange = (min, max) => Math.floor(Math.random() * (max - min) + min);
+
+  // Generates the store stock and updates
+  const generateShopStock = () => {
+    var shopItems = [];
+
+    // THIS IS CURRENTLY JUST FOR SNAKES, NEEDS TO BE CHANGED IN FUTURE
+    // TOO ACCOMODATE FOR OTHER REPTILES
+    for(var x = 0; x!= stockNum; x++){
+      var curReptile = {...reptiles.snakes[randInRange(0,reptiles.snakes.length-1)]};
+      const newLifeSpan = randInRange(curReptile.lifeSpan[0],curReptile.lifeSpan[1]);
+      curReptile.lifeSpan = newLifeSpan;
+      curReptile.sex = randInRange(1,3) == 1 ? "M" : "F";
+
+      var curMorphs = [], numOfMorphs = 0, wT = false;
+      for(var y=0; y!= curReptile.morphs.length;y++){
+        if(randInRange(0,100) >= 60){
+          if(curReptile.morphs[y].chromosome == "WT"){
+            if(!wT) wT = true;
+            else continue;
+          }
+          curMorphs.push(curReptile.morphs[y]);
+          numOfMorphs ++;
+        }
+        if(numOfMorphs >= 2) break;
+      }
+      if(numOfMorphs <= 0) curMorphs.push(curReptile.morphs[0]);
+      curReptile.morphs = curMorphs;
+      shopItems.push(curReptile);
+    }
+    // ---------------------------------------------
+    setStock(shopItems);
+  }
+
   // Used to find and return the id of an enclosure at a specific coordinate
   const findEnclosureAtCoords = (curX, curY) => {
     for(var x=0; x!= enclosures.length; x++){
@@ -213,17 +257,21 @@ const App = () => {
   // Function to deal with when the the draggable components are dropped 
   const droppedFromShop = (element, text) => {
     if(element.id[0] != null ){
+      console.log(enclosures);
       var coords = [element.id[0],element.id[1]];
+      console.log("This was dropped at: ",coords[0]," ",coords[1]);
       var enclosureID = findEnclosureAtCoords(coords[1],coords[0]);
       console.log("Dropped on enclosure "+ enclosureID);
-      if(text.price <= cash && enclosureID > -1){
+      var morphPrice = 0;
+      for(var x = 0; x!= text.morphs.length; x++) morphPrice += text.morphs[x].price;
+      if(morphPrice <= cash && enclosureID > -1){
         console.log(enclosures[enclosureID]);
         if(enclosures[enclosureID].reptile == "NaN"){
           console.log(text.species + " was rehomed into enclosure " + enclosureID);
           var nGrid = {...grid};
           var nEnclosures = [...enclosures];
           var nCash = cash;
-          nCash -= text.price;
+          nCash -= morphPrice;
           nGrid.prices[coords[1]][coords[0]] = text.species;
           nGrid.reptiles[coords[1]][coords[0]] = text;
           nEnclosures[enclosureID].reptile = text;
@@ -252,7 +300,7 @@ const App = () => {
     for(var x=0; x!=list2D.length; x++) list2D[x].push(defaultValue);
     return list2D;
   }
-
+  if(!stockGenerated) {generateShopStock(); setGenerated(true);}
 // APP HTML RETURN -------------------------------------------------
   return (
     <div onKeyDown={onKeyPressed} tabIndex={0}>
@@ -263,7 +311,7 @@ const App = () => {
         </div>
         <div style = {{display: "inline-block", verticalAlign: "middle"}}>
           <h1>Shop</h1>
-          <Shop snakeList={snakes} outcomeFunction={droppedFromShop}/>
+          <Shop stock = {shopStock} outcomeFunction={droppedFromShop}/>
         <div/>
       </div>
       <div>
@@ -340,12 +388,12 @@ const Cube = ({size, color, text, table, id, }) => {
 }
 
 // Component used to generate and interact with the shop
-const Shop = ({snakeList, outcomeFunction}) => {
-  var shopItems = [];
-  for (var x=0;x != snakeList.length; x++) shopItems.push(<ReptileDraggable key = {x} reptile={snakeList[x]} outcomeFunction={outcomeFunction}/>)
+const Shop = ({stock, outcomeFunction}) => {
+  var shopDisplay = [];
+  for(var x = 0; x!=stock.length;x++) shopDisplay.push(<ReptileDraggable key = {x} outcomeFunction={outcomeFunction} reptile={stock[x]}/>);
   return (
     <div>    
-      {shopItems}
+      {shopDisplay}
     </div>
   );
 }
@@ -354,6 +402,7 @@ const Shop = ({snakeList, outcomeFunction}) => {
 // Component used to interact with purchasing reptiles
 
 const ReptileDraggable = ({outcomeFunction, reptile}) => {
+    
   if(reptile != null){
     return (
       <Draggable outcomeFunction={outcomeFunction} text = {reptile}/>
@@ -363,10 +412,14 @@ const ReptileDraggable = ({outcomeFunction, reptile}) => {
 
 // Draggable component for shop items
 const Draggable = ({outcomeFunction, text}) => {
-
   const handleDragEnd = (event) => {
     outcomeFunction(document.elementFromPoint(event.clientX,event.clientY), text);
   }
+
+  var totalPrice = 0;
+    for(var x = 0; x!= text.morphs.length;x++) totalPrice += text.morphs[x].price;
+
+  const finalText = [text.name, <br key = {0}/>,"Price: £",totalPrice];
 
   return (
     <div
@@ -382,7 +435,7 @@ const Draggable = ({outcomeFunction, text}) => {
         }
 
       >
-        {text.species + ", Price: " + text.price}
+        {finalText}
     </div>
   );
 }
