@@ -196,36 +196,36 @@ const App = () => {
 
   const randInRange = (min, max) => Math.floor(Math.random() * (max - min) + min);
 
+  // Generates single snake
+  const generateNewSnake = () => {
+    var curReptile = {...reptiles.snakes[randInRange(0,reptiles.snakes.length)]};
+    const newLifeSpan = randInRange(curReptile.lifeSpan[0],curReptile.lifeSpan[1]);
+    curReptile.lifeSpan = newLifeSpan;
+    curReptile.sex = randInRange(1,3) == 1 ? "M" : "F";
+    const newAge = randInRange(0,3);
+    curReptile.age = newAge;
+    var curMorphs = [], numOfMorphs = 0, wT = false;
+    for(var y=0; y!= curReptile.morphs.length;y++){
+      if(randInRange(0,100) >= 60){
+        if(curReptile.morphs[y].chromosome == "WT"){
+          if(!wT) wT = true;
+          else continue;
+        }
+        curMorphs.push(curReptile.morphs[y]);
+        numOfMorphs ++;
+      }
+      if(numOfMorphs >= 2) break;
+    }
+    if(numOfMorphs <= 0) curMorphs.push(curReptile.morphs[0]);
+    curReptile.morphs = curMorphs;
+    curReptile.hunger = 100;
+    return curReptile;
+  }
+
   // Generates the store stock and updates
   const generateShopStock = () => {
     var shopItems = [];
-
-    // THIS IS CURRENTLY JUST FOR SNAKES, NEEDS TO BE CHANGED IN FUTURE
-    // TOO ACCOMODATE FOR OTHER REPTILES
-    for(var x = 0; x!= stockNum; x++){
-      var curReptile = {...reptiles.snakes[randInRange(0,reptiles.snakes.length)]};
-      const newLifeSpan = randInRange(curReptile.lifeSpan[0],curReptile.lifeSpan[1]);
-      curReptile.lifeSpan = newLifeSpan;
-      curReptile.sex = randInRange(1,3) == 1 ? "M" : "F";
-      const newAge = randInRange(0,3);
-      curReptile.age = newAge;
-      var curMorphs = [], numOfMorphs = 0, wT = false;
-      for(var y=0; y!= curReptile.morphs.length;y++){
-        if(randInRange(0,100) >= 60){
-          if(curReptile.morphs[y].chromosome == "WT"){
-            if(!wT) wT = true;
-            else continue;
-          }
-          curMorphs.push(curReptile.morphs[y]);
-          numOfMorphs ++;
-        }
-        if(numOfMorphs >= 2) break;
-      }
-      if(numOfMorphs <= 0) curMorphs.push(curReptile.morphs[0]);
-      curReptile.morphs = curMorphs;
-      shopItems.push(curReptile);
-    }
-    // ---------------------------------------------
+    for(var x = 0; x!= stockNum; x++){shopItems.push(generateNewSnake());}
     setStock(shopItems);
   }
 
@@ -286,26 +286,45 @@ const App = () => {
   // Function to deal with when the the draggable components are dropped 
   const droppedFromShop = (element, text) => {
     if(element.id[0] != null ){
-      console.log(enclosures);
+      // Get coordinates of element that droppable was dropped on
       var coords = [element.id[0],element.id[1]];
       console.log("This was dropped at: ",coords[0]," ",coords[1]);
+      // Check if there is an enclosure at those coordinates and get the id
       var enclosureID = findEnclosureAtCoords(coords[1],coords[0]);
       console.log("Dropped on enclosure "+ enclosureID);
+      // Get the total price of the reptile based on morph price
       var morphPrice = 0;
       for(var x = 0; x!= text.morphs.length; x++) morphPrice += text.morphs[x].price;
+      // IF user has enough cash to purchase this item and an enclosure exists
       if(morphPrice <= cash && enclosureID > -1){
         console.log(enclosures[enclosureID]);
+        // If that enclosure doesn't have a reptile
         if(enclosures[enclosureID].reptile == "NaN"){
           console.log(text.species + " was rehomed into enclosure " + enclosureID);
           var nGrid = {...grid};
           var nEnclosures = [...enclosures];
           var nCash = cash;
+          // Take away the cash price of the reptile from the user
           nCash -= morphPrice;
+          // Display the reptile species in the cube
           nGrid.prices[coords[1]][coords[0]] = text.species;
+          // Put the reptile info into the coordinates
           nGrid.reptiles[coords[1]][coords[0]] = text;
+          // Puts reptile info into the enclosure
           nEnclosures[enclosureID].reptile = text;
+          var itemNum = -1;
+          // Finds which index the item is in the shop
+          for (var x = 0;x!=shopStock.length;x++) if(shopStock[x] == text) {itemNum = x; break;}
+          var newShop = [...shopStock];
+          // Remove item from shop
+          console.log(itemNum);
+          newShop.splice(itemNum,1);
+          
+          console.log(newShop);
+          // Update hook values
           setCash(nCash);
           setGrid(nGrid);
+          setStock(newShop);
           setEnclosures(nEnclosures);
         }
       }
@@ -319,6 +338,19 @@ const App = () => {
     newGrid.prices = expand(newGrid.prices, 100);
     newGrid.reptiles = expand(newGrid.reptiles, reptileTemplate);
     setGrid(newGrid);
+  }
+
+  // Function called on a timer to pass the time
+  // Every time it's called, it represents a day going by
+  const passTime = () => {
+    var updatedEnclosures = [...enclosures]
+    for(var x = 0; x!= updatedEnclosures.length; x++){
+      var curReptile = {...updatedEnclosures[x].reptile};
+      curReptile.age += 0.003;
+      curReptile.hunger -= 1;
+      // FINISH THIS FUNCTION
+
+    }
   }
 
   // Function used to individually expand each array in the object
@@ -336,6 +368,7 @@ const App = () => {
       <div style = {{textAlign: "center"}}>
         <div style = {{display: "inline-block", verticalAlign: "middle"}}>
           <h1>Idle Reptile Rack</h1>
+          <h3>Cash: {["£",cash]}</h3>
           <Grid gridColor = {grid.colors} gridText = {grid.prices}/>
         </div>
         <div style = {{display: "inline-block", verticalAlign: "middle"}}>
@@ -344,9 +377,6 @@ const App = () => {
         <div/>
       </div>
       <div>
-        <h1>Actions</h1>
-        <button onClick={gridExpansion}>Increase size</button>
-        <h3>Cash: {cash}</h3>
         <Cube size = {100} text = {"Terrain Selected"} color = {colors[placeColor]} table = {false}/>
       </div>
     </div>  
