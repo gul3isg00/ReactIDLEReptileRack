@@ -5,6 +5,7 @@ const App = () => {
   const colors = ["darkolivegreen", "cornflowerblue", "burlywood"];
   const defaultColor = "black";
   const playerColor = "lightgray";
+  const buildColor = "lightskyblue";
 
   const reptileTemplate = {
     species: "NaN", 
@@ -99,7 +100,8 @@ const App = () => {
   const [placeColor, setPlaceColor] = useState(0);
   const [position, setPosition] = useState([1,1,defaultColor]);
   const [enclosures, setEnclosures] = useState([]);
-
+  const [buildMode, setBuildMode] = useState(false);
+  const [bID, setBID] = useState(-1);
   // All stock hooks
   const [shopStock, setStock] = useState([]);
   const [stockGenerated, setGenerated] = useState(false);
@@ -107,11 +109,11 @@ const App = () => {
 
   const [grid, setGrid] = useState({
     colors: [
-    [defaultColor,defaultColor,defaultColor, defaultColor, defaultColor],
-    [defaultColor,playerColor,defaultColor, defaultColor, defaultColor],
-    [defaultColor,defaultColor,defaultColor, defaultColor, defaultColor],
-    [defaultColor,defaultColor,defaultColor, defaultColor, defaultColor],
-    [defaultColor,defaultColor,defaultColor, defaultColor, defaultColor],
+    [[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]], [defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]]],
+    [[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[playerColor,[placeColor,playerColor,playerColor,playerColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]], [defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]]],
+    [[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]], [defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]]],
+    [[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]], [defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]]],
+    [[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]],[defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]], [defaultColor,[defaultColor,defaultColor,defaultColor,defaultColor]]],
   ],
     prices: [
       [100, 100, 100, 100, 100],
@@ -128,13 +130,46 @@ const App = () => {
       [reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate, reptileTemplate],
     ]
 });
+
+  // THIS NEEDS TO WORK ASYNCHRONOUSLY - THIS INTERFERES WITH OTHER FUNCTIONS TOO MUCH
+
+ // Function called on a timer to pass the time
+  // Every time it's called, it represents a day going by
+  const passTime = () => {
+    var updatedEnclosures = [...enclosures];
+    // var newGrid = {...grid};
+    for(var x = 0; x!= updatedEnclosures.length; x++){
+      var curReptile = {...updatedEnclosures[x].reptile};
+      if(curReptile.alive){
+        // Changing metrics that change over time
+        curReptile.age += 0.003;
+        curReptile.hunger --;
+        // Checking quality of life, and reducing health if
+        // quality of life bad
+        if(curReptile.hunger < 80) curReptile.health -= ((100 - curReptile.hunger) / 10);
+        if(curReptile.spaceReqs < updatedEnclosures[x].cubes.length) curReptile.health -= ((curReptile.spaceReqs - updatedEnclosures[x].cubes.length) * 2);
+        // Add the consequences to the health
+        if(curReptile.health <= 0) curReptile.lifeSpan --;
+        if(curReptile.age >= curReptile.lifeSpan){
+          curReptile.alive = false;
+          // newGrid.prices[updatedEnclosures[x].cubes[0][1]][updatedEnclosures[x].cubes[0][1]] = "Dead";
+          console.log("Dead");
+        }
+        console.log(curReptile.name,": Age:",curReptile.age," Health: ",curReptile.health);
+      }
+    }
+    setEnclosures(updatedEnclosures);
+    // setGrid(newGrid);
+  }
+
 // ALL BUTTON PRESS EVENTS --------------------------------------
   const onKeyPressed = (e) => {
     var newPos = [...position];
     var newColor = {...grid};
+    console.log(enclosures);
     // Placing block
     if(e.key == "Enter" || e.key == " "){
-      if(grid.reptiles[newPos[0]][newPos[1]].species == "NaN" && newPos[2] == defaultColor && grid.prices[newPos[0]][newPos[1]] <= cash){
+      if(grid.reptiles[newPos[0]][newPos[1]].species == "NaN" && newPos[2] == defaultColor && grid.prices[newPos[0]][newPos[1]] <= cash && buildMode){
         
         // Set cube to new color
         newPos[2] = colors[placeColor];
@@ -147,7 +182,6 @@ const App = () => {
         newColor.prices[newPos[0]][newPos[1]] = " ";
       
         checkForEnclosure(newPos[0],newPos[1]);
-
         setCash(newC);
       }
     }
@@ -168,7 +202,7 @@ const App = () => {
     // Moving player
     if(e.key.length >= 5 && (e.key).substring(0,5) == "Arrow")
     {
-      newColor.colors[position[0]][position[1]] = position[2];
+      newColor.colors[position[0]][position[1]][0] = position[2];
       if(e.key == "ArrowUp"){
         if(position[0] > 0) newPos[0]--;
       }
@@ -182,11 +216,31 @@ const App = () => {
         if(position[1] < grid.colors.length-1)newPos[1]++;
       }
 
-      newPos[2] = newColor.colors[newPos[0]][newPos[1]];
-      newColor.colors[newPos[0]][newPos[1]] = playerColor;
+      newPos[2] = newColor.colors[newPos[0]][newPos[1]][0];
+      newColor.colors[newPos[0]][newPos[1]][0] = buildMode?buildColor:playerColor;
     }
     console.log("Enclosure at this coords: " +findEnclosureAtCoords(newPos[0],newPos[1]));
 
+    if(e.key == "Shift") {
+      if(buildMode) setBID(-1);
+      for(var x = 0; x!=enclosures.length;x++){
+        for(var y=0; y!=enclosures[x].cubes.length;y++){
+        var diffCoords = [
+          [enclosures[x].cubes[y][0] - 1, enclosures[x].cubes[y][1]],
+          [enclosures[x].cubes[y][0] + 1, enclosures[x].cubes[y][1]],
+          [enclosures[x].cubes[y][0], enclosures[x].cubes[y][1] - 1],
+          [enclosures[x].cubes[y][0], enclosures[x].cubes[y][1] + 1],
+        ];            
+        if(enclosures[x].cubes.indexOf(diffCoords)[0] > -1) newColor.colors[enclosures[x].cubes[y][0]][enclosures[x].cubes[y][1]][1][0] = colors[placeColor];
+        if(enclosures[x].cubes.indexOf(diffCoords)[1] > -1) newColor.colors[enclosures[x].cubes[y][0]][enclosures[x].cubes[y][1]][1][1] = colors[placeColor];
+        if(enclosures[x].cubes.indexOf(diffCoords)[2] > -1) newColor.colors[enclosures[x].cubes[y][0]][enclosures[x].cubes[y][1]][1][2] = colors[placeColor];
+        if(enclosures[x].cubes.indexOf(diffCoords)[3] > -1) newColor.colors[enclosures[x].cubes[y][0]][enclosures[x].cubes[y][1]][1][3] = colors[placeColor];
+
+        }
+      }
+      console.log(newColor);
+      setBuildMode(!buildMode);
+    }
     setGrid(newColor);
     setPosition(newPos);
   };
@@ -219,6 +273,9 @@ const App = () => {
     if(numOfMorphs <= 0) curMorphs.push(curReptile.morphs[0]);
     curReptile.morphs = curMorphs;
     curReptile.hunger = 100;
+    curReptile.health = randInRange(50,100);
+    curReptile.alive = true;
+    if(curReptile.sex == "F") curReptile.gravid = false;
     return curReptile;
   }
 
@@ -248,38 +305,39 @@ const App = () => {
   // in the rack without running creating one big enclosure.
   const checkForEnclosure = (curX, curY) => {
     var newEnc = [...enclosures];
-    var existingEnc = false;
+    // var existingEnc = false;
 
-    var diffCoords = [
-      [curX - 1, curY],
-      [curX + 1, curY],
-      [curX, curY - 1],
-      [curX, curY + 1],
-    ];
+    // var diffCoords = [
+    //   [curX - 1, curY],
+    //   [curX + 1, curY],
+    //   [curX, curY - 1],
+    //   [curX, curY + 1],
+    // ];
 
-    for(var x=0; x!= enclosures.length; x++){
-      for(var y=0; y!= enclosures[x].cubes.length; y++){
-        for(var z = 0; z!= diffCoords.length; z++){
-          if(enclosures[x].cubes[y][0] == diffCoords[z][0] && enclosures[x].cubes[y][1] == diffCoords[z][1]){
-            newEnc[x].cubes.push([curX,curY]);
-            newEnc[x].size ++;;
-            console.log("Cube: " + curX + ":"+curY +" added to enclosure "+ x, ". Size is now " + newEnc[x].size);
-            existingEnc = true;
-          }
-        }
-      }
-    }
-
-    if (!existingEnc){
+    // for(var x=0; x!= enclosures.length; x++){
+    //   for(var y=0; y!= enclosures[x].cubes.length; y++){
+    //     for(var z = 0; z!= diffCoords.length; z++){
+    //       if(enclosures[x].cubes[y][0] == diffCoords[z][0] && enclosures[x].cubes[y][1] == diffCoords[z][1]){
+    //         newEnc[x].cubes.push([curX,curY]);
+    //         newEnc[x].size ++;;
+    //         console.log("Cube: " + curX + ":"+curY +" added to enclosure "+ x, ". Size is now " + newEnc[x].size);
+    //         existingEnc = true;
+    //       }
+    //     }
+    //   }
+    // }
+    var nBID = bID;
+    if(bID == -1){
       newEnc.push({
         id: enclosures.length,
         cubes: [[curX,curY]],
         reptile: "NaN",
         size: 1
       })
-      console.log("No enclosure here, creating one at "+curX+":"+curY);
-    }
+      nBID = enclosures.length;
+    }else newEnc[bID].cubes.push([curX,curY]) ;
 
+    setBID(nBID);
     setEnclosures(newEnc);
   };
 
@@ -340,19 +398,7 @@ const App = () => {
     setGrid(newGrid);
   }
 
-  // Function called on a timer to pass the time
-  // Every time it's called, it represents a day going by
-  const passTime = () => {
-    var updatedEnclosures = [...enclosures]
-    for(var x = 0; x!= updatedEnclosures.length; x++){
-      var curReptile = {...updatedEnclosures[x].reptile};
-      curReptile.age += 0.003;
-      curReptile.hunger -= 1;
-      // FINISH THIS FUNCTION
-
-    }
-  }
-
+ 
   // Function used to individually expand each array in the object
   const expand = (list2D, defaultValue) => {
     var newRow = [];
@@ -361,7 +407,11 @@ const App = () => {
     for(var x=0; x!=list2D.length; x++) list2D[x].push(defaultValue);
     return list2D;
   }
+
+  // Functions to be executed on startup
   if(!stockGenerated) {generateShopStock(); setGenerated(true);}
+  // setInterval(passTime,1000);
+
 // APP HTML RETURN -------------------------------------------------
   return (
     <div onKeyDown={onKeyPressed} tabIndex={0}>
@@ -377,7 +427,7 @@ const App = () => {
         <div/>
       </div>
       <div>
-        <Cube size = {100} text = {"Terrain Selected"} color = {colors[placeColor]} table = {false}/>
+        <Cube size = {100} text = {"Terrain Selected"} color = {[colors[placeColor],-1]} table = {false}/>
       </div>
     </div>  
     </div>
@@ -421,17 +471,22 @@ const Row = ({rowColor, rowText, rowID}) => {
 }
 
 // Cube component
-const Cube = ({size, color, text, table, id, }) => {
+const Cube = ({size, color, text, table, id}) => {
   var txtColor = "black";
-  var cBorderColor = color;
-  if(color == "black" || color == "blue") txtColor = "white";
-  if(color == "black") cBorderColor = "white";
+  var cBorderColor = color[0];
+  if(color[0] == "black" || color[0] == "blue") txtColor = "white";
+  if(color[0] == "black") cBorderColor = "white";
 
   const style = {
+
     color: txtColor, 
     textAlign: "center",
-    backgroundColor: color, 
+    backgroundColor: color[0], 
     border: "2px solid " + cBorderColor,
+    borderTopColor: color[1][3],
+    borderLeftColor: color[1][0],
+    borderRightColor: color[1][1],
+    borderBottomColor: color[1][2],
     height: size, 
     width: size
   }
@@ -473,9 +528,10 @@ const ReptileDraggable = ({outcomeFunction, reptile}) => {
 
 // Draggable component for shop items
 const Draggable = ({outcomeFunction, text}) => {
+
   const handleDragEnd = (event) => {
     outcomeFunction(document.elementFromPoint(event.clientX,event.clientY), text);
-  }
+  };
 
   var totalPrice = 0;
   for(var x = 0; x!= text.morphs.length;x++) totalPrice += text.morphs[x].price;
@@ -487,8 +543,6 @@ const Draggable = ({outcomeFunction, text}) => {
   finalText.push("Sex: ",sex,<br key = {79}/>);
 
   for(var x =0 ;x!=text.morphs.length;x++){finalText.push(text.morphs[x].name); finalText.push(<br key = {"y"+x}/>);}
-
-
 
   return (
     <div
