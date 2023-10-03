@@ -2,6 +2,8 @@
 A personal project I am working on to help develop my understanding of **React**, whilst bringing my love for reptiles and reptile keeping into my work.
 The game focuses around purchasing reptiles and reptile enclosures, then raising and breeding them for profit, or just for fun.
 
+![App](appDisplay.png)
+
 **This game is still very early in development, but currently features:**
 - A 5x5 grid which can be purchased and used as enclosures.
 - A terrain selector, allowing you to choose between 3 different types of enclosure to purchase.
@@ -20,6 +22,8 @@ The game focuses around purchasing reptiles and reptile enclosures, then raising
 Change selected cube: ```Arrow Keys```
 
 Change selected terrain: ```Square Brackets```
+
+Enter "enclosure builder" mode: ```Shift``` (Blue selector = Edit mode, Grey selector = Regular mode)
 
 Purchase enclosure: ```Enter```
 
